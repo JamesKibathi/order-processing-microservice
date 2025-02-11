@@ -3,6 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from api.models.accounts import User
 from api.models.categories import Category
 from api.models.customers import Customer
+from api.models.orders import Order
 from api.models.products import Product
 
 # Register your models here.
@@ -35,3 +36,4 @@ admin.site.register(User, CustomUserAdmin)
 admin.site.register(Customer)
 admin.site.register(Category,CategoryAdmin)
 admin.site.register(Product)
+admin.site.register(Order)
