@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from api.models.accounts import User
+from api.models.categories import Category
 from api.models.customers import Customer
 
 # Register your models here.
@@ -25,5 +26,10 @@ class CustomUserAdmin(UserAdmin):
 
     filter_horizontal = ('groups', 'user_permissions',)
 
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ('code', 'title','parent')
+    ordering = ('parent',)    
+
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Customer)
+admin.site.register(Category,CategoryAdmin)
