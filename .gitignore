@@ -1,4 +1,12 @@
-#Environments
+# Environments
 venv
 env
 .env
+
+# Static files
+static
+/static
+staticfiles
+/staticfiles
+
+__pycache__/
