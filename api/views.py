@@ -3,8 +3,13 @@ from rest_framework.decorators import action
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from django.db.models import Avg
-from .models import Product, Category,Order
-from .serializers import ProductSerializer,OrderSerializer,CategorySerializer
+from .models import Product, Category,Order,Customer
+from .serializers import CustomerSerializer, ProductSerializer,OrderSerializer,CategorySerializer
+
+
+class CustomerViewSet(viewsets.ModelViewSet):
+    queryset = Customer.objects.all()
+    serializer_class = CustomerSerializer
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()

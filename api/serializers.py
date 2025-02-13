@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from api.utils.services import CustomerUserService
+
 from .models import User,Customer, Category, Product, Order, OrderItem
 
 class UserDataSerializer(serializers.ModelSerializer):
@@ -34,9 +36,15 @@ class UserCreateSerializer(serializers.ModelSerializer):
         return user         
     
 class CustomerSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(read_only=True) 
     class Meta:
         model = Customer
-        fields = ['id',' name ', 'phonenumber', 'email', 'address']
+        fields = ['id','name', 'phonenumber', 'email', 'address','user']
+    def create(self, validated_data):
+        customer = Customer.objects.create(**validated_data)
+
+        # Call the service to create a user for the customer
+        return  CustomerUserService.make_customer_user(customer)
 
 class CategorySerializer(serializers.ModelSerializer):
     code = serializers.CharField(read_only=True)
@@ -51,12 +59,27 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = ['id','name', 'description', 'price', 'category']
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    price = serializers.ReadOnlyField(source='product.price')
     class Meta:
         model = OrderItem
         fields = ['id','product', 'quantity', 'price']  
+    def validate_quantity(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Quantity must be a positive integer.")
+        return value    
+    
+    def create(self, validated_data):
+        # Fetch the price from the related Product model
+        product = validated_data['product']
+        price = product.price
+        validated_data['price'] = price  
+        return super().create(validated_data)
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
+    total_amount = serializers.ReadOnlyField()
+    status = serializers.ReadOnlyField()
+    customer =  CustomerSerializer(read_only=True)
     class Meta:
         model = Order
         fields = ['id', 'customer', 'created_at', 'total_amount', 'status', 'items']

@@ -2,10 +2,14 @@ import africastalking
 
 from django.core.mail import send_mail
 from django.conf import settings
+from api.models.accounts import User
+from django.contrib.auth.hashers import make_password
 
 
 import os
 from dotenv import load_dotenv
+
+
 load_dotenv()
 
 
@@ -61,3 +65,37 @@ class EmailService:
 # response=email_service.send_email("New Order", "Hey James, Your Order has been processed", ["njenga.consulting@gmail.com"])   
 
 # print("Email Response ...",response)
+
+
+class CustomerUserService:
+    """
+    Service to link customer to a user.
+    """
+    @staticmethod
+    def make_customer_user(customer):
+        if customer.user:  
+            return customer
+      
+        try:
+            user = User.objects.create(
+                username = customer.phonenumber,  
+                first_name = customer.name.split()[0],  
+                last_name = " ".join(customer.name.split()[1:]) if len(customer.name.split()) > 1 else "",
+                email = customer.email,
+                phone = customer.phonenumber,
+               
+            )
+            user.set_password('default123')
+            user.save()
+            
+            customer.user = user
+            customer.save()
+
+            print(f"success.Customer User:{user}")
+
+            return customer
+        
+        
+        except Exception as e:
+            print("There was an error creating user")
+            raise ValueError(f"Failed to create user for customer: {str(e)}")
