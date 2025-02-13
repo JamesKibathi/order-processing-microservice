@@ -3,10 +3,9 @@ from rest_framework.decorators import action
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from django.db.models import Avg
-from .models import Product, Category
-from .serializers import ProductSerializer
+from .models import Product, Category,Order
+from .serializers import ProductSerializer,OrderSerializer
 
-# Create your views here.
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
@@ -26,3 +25,10 @@ class ProductViewSet(viewsets.ModelViewSet):
         avg_price = Product.objects.filter(category__in=subcategories).aggregate(avg_price=Avg('price'))['avg_price']
         return Response({'category_id': category_id,'average_price': avg_price})
 
+
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(customer=self.request.user)
