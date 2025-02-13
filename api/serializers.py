@@ -44,6 +44,7 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id','code', 'title', 'parent']
 
 class ProductSerializer(serializers.ModelSerializer):
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all()) 
     class Meta:
         model = Product
         fields = ['id','name', 'description', 'price', 'category']
@@ -72,5 +73,5 @@ class OrderSerializer(serializers.ModelSerializer):
 
         order.total_amount = total_amount
         order.save()    
-        
+
         return order        
