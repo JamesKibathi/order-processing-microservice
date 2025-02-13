@@ -3,6 +3,8 @@ from rest_framework.decorators import action
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from django.db.models import Avg
+
+from api.auth import CustomOIDCAuthentication, HasValidAuth0Token
 from .models import Product, Category,Order,Customer
 from .serializers import CustomerSerializer, ProductSerializer,OrderSerializer,CategorySerializer
 
@@ -35,6 +37,8 @@ class ProductViewSet(viewsets.ModelViewSet):
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all().prefetch_related('items__product')
     serializer_class = OrderSerializer
+    authentication_classes = [CustomOIDCAuthentication]
+    permission_classes = [HasValidAuth0Token]
 
     def perform_create(self, serializer):
         serializer.save(customer=self.request.user)

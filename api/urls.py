@@ -12,4 +12,5 @@ app_name = 'api'
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('oauth/', include('oauth2_provider.urls', namespace='oauth2_provider')),
 ]
