@@ -16,14 +16,15 @@ class ProductViewSet(viewsets.ModelViewSet):
         if not category_id:
             return Response({"error": "Category ID is required"}, 
                           status=status.HTTP_400_BAD_REQUEST)
+        try:
+            category = Category.objects.get(id=category_id)
+        except Category.DoesNotExist:
+            return Response({"error": "Category not found"}, status=status.HTTP_404_NOT_FOUND)
         
-        #Get all subcategories
-        category = Category.objects.get(id=category_id)
         subcategories = category.get_descendants(include_self=True)
-
-        #calculate average price for each subcategory
         avg_price = Product.objects.filter(category__in=subcategories).aggregate(avg_price=Avg('price'))['avg_price']
-        return Response({'category_id': category_id,'average_price': avg_price})
+
+        return Response({'category_id': category_id, 'average_price': avg_price or 0}) 
 
 
 class OrderViewSet(viewsets.ModelViewSet):
