@@ -1,10 +1,11 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import OrderViewSet, ProductViewSet
+from .views import OrderViewSet, ProductViewSet, CategoryViewSet
 
 router = DefaultRouter()
 router.register(r'products', ProductViewSet)
 router.register(r'orders', OrderViewSet)
+router.register(r'categories', CategoryViewSet)
 
 app_name = 'api'
 

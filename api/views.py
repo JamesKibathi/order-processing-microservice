@@ -4,14 +4,14 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from django.db.models import Avg
 from .models import Product, Category,Order
-from .serializers import ProductSerializer,OrderSerializer
+from .serializers import ProductSerializer,OrderSerializer,CategorySerializer
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
 
     @action(detail=False, methods=['get'])
-    def category_average(self, request):
+    def average_price(self, request):
         category_id = request.query_params.get('category_id')
         if not category_id:
             return Response({"error": "Category ID is required"}, 
@@ -33,3 +33,8 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(customer=self.request.user)
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
