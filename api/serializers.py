@@ -39,6 +39,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         fields = ['id',' name ', 'phonenumber', 'email', 'address']
 
 class CategorySerializer(serializers.ModelSerializer):
+    code = serializers.CharField(read_only=True)
     class Meta:
         model = Category
         fields = ['id','code', 'title', 'parent']
