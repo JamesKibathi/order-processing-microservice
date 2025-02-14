@@ -41,10 +41,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         model = Customer
         fields = ['id','name', 'phonenumber', 'email', 'address','user']
     def create(self, validated_data):
-        customer = Customer.objects.create(**validated_data)
-
-        # Call the service to create a user for the customer
-        return  CustomerUserService.make_customer_user(customer)
+        return Customer.objects.create(**validated_data)
 
 class CategorySerializer(serializers.ModelSerializer):
     code = serializers.CharField(read_only=True)
@@ -80,22 +77,31 @@ class OrderSerializer(serializers.ModelSerializer):
     total_amount = serializers.ReadOnlyField()
     status = serializers.ReadOnlyField()
     customer =  CustomerSerializer(read_only=True)
+    phone_number = serializers.CharField(write_only=True)
     class Meta:
         model = Order
-        fields = ['id', 'customer', 'created_at', 'total_amount', 'status', 'items']
+        fields = ['id', 'customer', 'created_at', 'total_amount', 'status', 'items','phone_number']
     def create(self, validated_data):
         items_data = validated_data.pop('items',[])
-        order = Order.objects.create(**validated_data)
+        phone_number = validated_data.pop('phone_number')
 
-        total_amount  = 0
-        for item_data in items_data:
-            product = item_data['product']
-            price = product.price
-            quantity = item_data['quantity']
-            total_amount  += price * quantity
-            OrderItem.objects.create(order=order, product=product, quantity=quantity, price=price)
+        total_amount = sum(
+            item_data['product'].price * item_data['quantity']
+            for item_data in items_data
+        )
+        
 
-        order.total_amount = total_amount
-        order.save()    
+        order = Order.objects.create(**validated_data,total_amount=total_amount)
+
+        # Create order items
+        OrderItem.objects.bulk_create([
+            OrderItem(
+                order=order,
+                product=item_data['product'],
+                quantity=item_data['quantity'],
+                price=item_data['product'].price
+            )
+            for item_data in items_data
+        ])    
 
         return order        

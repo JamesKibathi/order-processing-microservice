@@ -11,9 +11,11 @@ import requests
 from cryptography.x509 import load_pem_x509_certificate
 from cryptography.hazmat.backends import default_backend
 
+from api.models.accounts import User
+from api.models.customers import Customer
+from api.utils.helpers import generate_random_phonenumber
 
 
-User = get_user_model()
 
 @lru_cache(maxsize=1)
 def get_auth0_public_key():
@@ -35,7 +37,6 @@ def get_public_key(token):
         raise AuthenticationFailed(f'Failed to construct public key: {str(e)}')
 
 
-
 class Auth0Authentication(BaseAuthentication):
     def authenticate(self, request):
         auth_header = request.headers.get('Authorization')
@@ -43,13 +44,9 @@ class Auth0Authentication(BaseAuthentication):
             return None
 
         try:
-            # Extract the token
             token = auth_header.split(' ')[1]
-            
-            # Get the public key
             public_key = get_public_key(token)
-            
-            # Decode and verify the token
+
             payload = jwt.decode(
                 token,
                 public_key,
@@ -57,22 +54,39 @@ class Auth0Authentication(BaseAuthentication):
                 audience=settings.AUTH0_API_IDENTIFIER,
                 issuer=f"https://{settings.AUTH0_DOMAIN}/"
             )
-            
-            # Get or create user based on Auth0 sub claim
-            user, _ = User.objects.get_or_create(
-                username=payload['sub'],
-                defaults={
-                    'email': payload.get('email', ''),
-                    'is_active': True
-                }
-            )
-            
+
+            sub = payload['sub']
+            email = payload.get("email", None)  
+            first_name = payload.get("given_name", "Auth0") 
+            last_name = payload.get("family_name", "User") 
+            phone_number = payload.get('phone_number',generate_random_phonenumber())
+
+            # Ensure it's a real user (sub should not end with "@clients")
+            if sub.endswith("@clients"):
+                raise AuthenticationFailed("M2M tokens are not allowed for user authentication.")
+
+            # Extract email (if available)
+            email = payload.get("email", "")
+
+            user = User.objects.filter(username=sub).first()
+           
+            if not user:
+                user = User.objects.create(
+                    username=sub,  # Store Auth0 sub as username
+                    email=email or f"{sub}@example.com", 
+                    phone = phone_number,
+                    first_name=first_name,
+                    last_name= last_name,
+                    is_active=True
+                )     
+
             return (user, None)
-            
+
         except (IndexError, JWTError) as e:
             raise AuthenticationFailed(f'Invalid token: {str(e)}')
         except Exception as e:
             raise AuthenticationFailed(f'Authentication failed: {str(e)}')
+        
 
 # permissions.py
 class HasValidAuth0Token(BasePermission):

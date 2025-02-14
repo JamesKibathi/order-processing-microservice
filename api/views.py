@@ -5,7 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Avg
 
-from api.auth import Auth0Authentication,HasValidAuth0Token
+from api.auth import Auth0Authentication
+from api.models.accounts import User
 from .models import Product, Category,Order,Customer
 from .serializers import CustomerSerializer, ProductSerializer,OrderSerializer,CategorySerializer
 
@@ -42,7 +43,33 @@ class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(customer=self.request.user)
+        user = self.request.user
+        phone_number = serializer.validated_data.get('phone_number')
+
+
+        if phone_number:
+            existing_customer = Customer.objects.filter(phonenumber=phone_number).first()
+            if existing_customer:
+                # If a customer with the same phone number exists, use that customer
+                customer = existing_customer
+            
+        
+        else:
+            # Create a new customer if no existing one was found
+            customer, created = Customer.objects.get_or_create(
+                user=user,
+                defaults={
+                    'name': user.username,  
+                    'phonenumber': phone_number or user.phone,
+                    'email': user.email
+                }
+            )
+
+            if not created and customer.phonenumber != phone_number:
+                customer.phonenumber = phone_number
+                customer.save()
+
+        serializer.save(customer=customer)    
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
