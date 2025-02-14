@@ -1,6 +1,3 @@
-# e-commerce-service
-Online Shop With Django
-
 # E-Commerce Service API
 
 This is a Python-based E-Commerce service API built with **Django Rest Framework (DRF)**. It enables customers to place orders, authenticate via **Auth0**, and manage product and order data. This API also provides integration with **Africa's Talking SMS API** for order notifications and email notifications for the admin.
@@ -111,16 +108,33 @@ This is a Python-based E-Commerce service API built with **Django Rest Framework
     - **Response**:
       ```json
       {
-        "id": "order_id",
-        "customer": "customer_id",
-        "items": [
-          {
-            "product": "product_id",
-            "quantity": 2
-          }
-        ],
-        "status": "pending"
-      }
+            "id": "c909fadb-b6ec-47d3-a3b2-54fb58797942",
+            "customer": {
+                "id": "3f1a0cf4-ab02-4224-ac6b-c8d76e7fbdd5",
+                "name": "auth0|67af1e32c2e9611fd73e9f1a",
+                "phonenumber": "+71811001910101011",
+                "email": "auth0|67af1e32c2e9611fd73e9f1a@example.com",
+                "address": "",
+                "user": "ab22a598-0c26-428f-801b-857334163b48"
+            },
+            "created_at": "2025-02-14T12:15:01.808348Z",
+            "total_amount": 1450.0,
+            "status": "pending",
+            "items": [
+                {
+                    "id": "e6fe8110-64ec-47cb-8bbe-0542e4075841",
+                    "product": "11eb1775-893b-453d-a92a-529627c29b0a",
+                    "quantity": 7,
+                    "price": 200.0
+                },
+                {
+                    "id": "844c8afc-342c-4357-ba47-779e0af9872b",
+                    "product": "acf4935a-b66f-47c6-a6ba-d840e62a6cfe",
+                    "quantity": 5,
+                    "price": 10.0
+                }
+            ]
+        }
       ```
 
 ### 2. **Authentication Endpoints**:
