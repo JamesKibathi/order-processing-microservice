@@ -1,11 +1,15 @@
 from functools import lru_cache
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from jose import JWTError
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import AuthenticationFailed
 import jwt
 import requests
-from django.contrib.auth import get_user_model
+
+from cryptography.x509 import load_pem_x509_certificate
+from cryptography.hazmat.backends import default_backend
 
 
 
@@ -13,63 +17,62 @@ User = get_user_model()
 
 @lru_cache(maxsize=1)
 def get_auth0_public_key():
-    response = requests.get(f'https://{settings.AUTH0_DOMAIN}/.well-known/jwks.json')
-    jwks = response.json()
-    return jwks['keys'][0]
+    jwks_url = f"https://{settings.AUTH0_DOMAIN}/.well-known/jwks.json"
+    try:
+        response = requests.get(jwks_url)
+        jwks = response.json()
+        return jwks['keys'][0]
+    except Exception as e:
+        raise AuthenticationFailed(f'Failed to fetch JWKS: {str(e)}')
 
-class CustomOIDCAuthentication(BaseAuthentication):
+def get_public_key(token):
+    try:
+        jwk = get_auth0_public_key()
+        cert = '-----BEGIN CERTIFICATE-----\n' + jwk['x5c'][0] + '\n-----END CERTIFICATE-----'
+        certificate = load_pem_x509_certificate(cert.encode(), default_backend())
+        return certificate.public_key()
+    except Exception as e:
+        raise AuthenticationFailed(f'Failed to construct public key: {str(e)}')
+
+
+
+class Auth0Authentication(BaseAuthentication):
     def authenticate(self, request):
-
         auth_header = request.headers.get('Authorization')
-
         if not auth_header:
             return None
-        
+
         try:
-
-            if not auth_header.startswith('Bearer '):
-                raise AuthenticationFailed('Invalid authorization header format')
-            
+            # Extract the token
             token = auth_header.split(' ')[1]
-            public_key = get_auth0_public_key()
-
+            
+            # Get the public key
+            public_key = get_public_key(token)
+            
             # Decode and verify the token
-            decoded = jwt.decode(
+            payload = jwt.decode(
                 token,
-                jwt.algorithms.RSAAlgorithm.from_jwk(public_key),
+                public_key,
                 algorithms=['RS256'],
-                audience=settings.AUTH0_CLIENT_ID,
-                issuer=f'https://{settings.AUTH0_DOMAIN}/',
-                options={
-                    'verify_signature': True,
-                    'verify_aud': True,
-                    'verify_iss': True,
-                    'verify_exp': True,
-                }
+                audience=settings.AUTH0_API_IDENTIFIER,
+                issuer=f"https://{settings.AUTH0_DOMAIN}/"
             )
-
+            
             # Get or create user based on Auth0 sub claim
-            if 'sub' not in decoded:
-                raise AuthenticationFailed('No subject identifier in token')
-
             user, _ = User.objects.get_or_create(
-                username=decoded['sub'],
+                username=payload['sub'],
                 defaults={
-                    'email': decoded.get('email', ''),
-                    'first_name': decoded.get('given_name', ''),
-                    'last_name': decoded.get('family_name', '')
+                    'email': payload.get('email', ''),
+                    'is_active': True
                 }
             )
             
             return (user, None)
-        
-        except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed('Token has expired')
-        except jwt.InvalidTokenError as e:
+            
+        except (IndexError, JWTError) as e:
             raise AuthenticationFailed(f'Invalid token: {str(e)}')
         except Exception as e:
             raise AuthenticationFailed(f'Authentication failed: {str(e)}')
-        
 
 # permissions.py
 class HasValidAuth0Token(BasePermission):
