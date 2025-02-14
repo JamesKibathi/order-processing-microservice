@@ -1,6 +1,3 @@
-# e-commerce-service
-Online Shop With Django
-
 # E-Commerce Service API
 
 This is a Python-based E-Commerce service API built with **Django Rest Framework (DRF)**. It enables customers to place orders, authenticate via **Auth0**, and manage product and order data. This API also provides integration with **Africa's Talking SMS API** for order notifications and email notifications for the admin.
