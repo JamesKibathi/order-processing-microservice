@@ -16,6 +16,11 @@ staticfiles
 __pycache__/
 *.py[cod]
 *$py.class
+.pytest_cache
+
+# Coverage reports
+.coverage
+htmlcov/
 
 #Generate token
 script.py
