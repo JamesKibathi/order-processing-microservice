@@ -51,7 +51,6 @@ class OrderViewSet(viewsets.ModelViewSet):
         if phone_number:
             existing_customer = Customer.objects.filter(phonenumber=phone_number).first()
             if existing_customer:
-                # If a customer with the same phone number exists, use that customer
                 customer = existing_customer
             
         

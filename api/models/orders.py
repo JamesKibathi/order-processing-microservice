@@ -17,8 +17,7 @@ class Order(BaseModel):
         ordering = ['-created_at',]
         verbose_name = "Order"
         verbose_name_plural = "Orders"
-
-    
+ 
     def __str__(self):
         return f"Order {self.id} - {self.customer} ({self.get_status_display()})"    
 

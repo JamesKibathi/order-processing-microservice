@@ -66,7 +66,6 @@ class OrderItemSerializer(serializers.ModelSerializer):
         return value    
     
     def create(self, validated_data):
-        # Fetch the price from the related Product model
         product = validated_data['product']
         price = product.price
         validated_data['price'] = price  
