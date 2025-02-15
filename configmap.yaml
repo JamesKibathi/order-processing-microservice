@@ -7,3 +7,19 @@ data:
   DJANGO_ALLOWED_HOSTS: "*"
   DATABASE_HOST: "postgres-service"
   DATABASE_PORT: "5432"
+
+  # SMS configs
+  AT_USERNAME: "sandbox"
+  AT_SHORT_CODE: "31172"
+
+
+   # Email configs
+  EMAIL_HOST: "smtp.gmail.com"
+  EMAIL_PORT: "465"
+  EMAIL_USE_SSL: "True"
+  ADMIN_EMAIL: "njenga.consulting@gmail.com"
+  DEFAULT_FROM_EMAIL: "admin.support@gmail.com"
+
+  # Auth0 configs
+  AUTH0_DOMAIN: "dev-egfwj5es8rnzxdjs.us.auth0.com"
+  AUTH0_API_IDENTIFIER: "http://localhost:8000/api/v1/myorders/"
