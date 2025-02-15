@@ -1,3 +1,4 @@
+from decimal import Decimal
 import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -53,5 +54,5 @@ def test_create_order(api_client):
     response = api_client.post(url, order_data, format="json")
 
     assert response.status_code == 201
-    assert response.data["total_amount"] == "1500.00"
+    assert response.data["total_amount"] == Decimal('1500.00')
     assert response.data["customer"]["phonenumber"] == "1234567890"

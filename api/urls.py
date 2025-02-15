@@ -3,10 +3,10 @@ from rest_framework.routers import DefaultRouter
 from .views import OrderViewSet, ProductViewSet, CategoryViewSet,CustomerViewSet
 
 router = DefaultRouter()
-router.register(r'products', ProductViewSet)
-router.register(r'orders', OrderViewSet)
-router.register(r'categories', CategoryViewSet)
-router.register(r'customers',CustomerViewSet)
+router.register(r'products', ProductViewSet, basename='products')
+router.register(r'orders', OrderViewSet, basename='orders')
+router.register(r'categories', CategoryViewSet, basename='categories')
+router.register(r'customers',CustomerViewSet, basename='customers')
 
 app_name = 'api'
 
