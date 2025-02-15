@@ -24,3 +24,6 @@ htmlcov/
 
 #Generate token
 script.py
+
+#kubeconfig
+kubeconfig.yaml
