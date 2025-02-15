@@ -4,9 +4,11 @@ from django.db import models
 
 from api.models.products import Product
 from api.utils.choices import ORDER_STATUS
+from api.utils.helpers import generate_order_number
 
 
 class Order(BaseModel):
+    order_number = models.CharField(max_length=20, default=generate_order_number)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE,related_name="orders")
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20,choices=ORDER_STATUS, default=ORDER_STATUS.pending)

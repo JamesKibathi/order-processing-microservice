@@ -13,6 +13,8 @@ def get_uuid():
 def generate_category_code():
      return ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
 
+def generate_order_number():
+    return f"OR{random.randint(1000, 9999)}"
 
 def generate_random_phonenumber():
     # Generate a random 10-digit phone number
