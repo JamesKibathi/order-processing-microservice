@@ -133,14 +133,13 @@ jobs:
             echo "Minikube is already running."
           fi
 
-      - name: Configure Minikube CA Certificate
+      - name: Configure Minikube Without Certificate Check
         run: |
-          echo "${{ secrets.MINIKUBE_CA }}" | base64 -d > minikube-ca.crt
           kubectl config set-cluster minikube \
             --server=https://192.168.49.2:8443 \
-            --certificate-authority=$(pwd)/minikube-ca.crt
+            --insecure-skip-tls-verify=true
           kubectl config set-context minikube --cluster=minikube --user=minikube
-          kubectl config use-context minikube    
+          kubectl config use-context minikube
 
 
       - name: Test Minikube Connection
