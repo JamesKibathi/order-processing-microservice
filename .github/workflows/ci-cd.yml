@@ -142,11 +142,6 @@ jobs:
           kubectl config set-context minikube --cluster=minikube --user=minikube
           kubectl config use-context minikube    
 
-      - name: Configure KUBECONFIG for Minikube
-        run: |
-          export KUBECONFIG=$(minikube --profile=minikube kubeconfig)
-          echo "KUBECONFIG=$(minikube --profile=minikube kubeconfig)" >> $GITHUB_ENV
-          kubectl config use-context minikube
 
       - name: Test Minikube Connection
         run: |
