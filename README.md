@@ -163,14 +163,14 @@ This is a Python-based E-Commerce service API built with **Django Rest Framework
   - **POST /api/v1/categories/**: Create a new category.
 
 ## Sample Swagger UI:
-  ![Products Swagger UI](./static/products.png)
-  ![Categories Swagger UI](./static/categories.png)
-  ![Orders Swagger UI](./static/orders.png)
+  ![Products Swagger UI](./swagger/products.png)
+  ![Categories Swagger UI](./swagger/categories.png)
+  ![Orders Swagger UI](./swagger/orders.png)
 
 
 
 ## Tests Coverage:
-  ![Coverage](./static/tests.png)
+  ![Coverage](./swagger/tests.png)
 
 ## Contribution:
 Feel free to fork and contribute to this project. If you have any improvements or bug fixes, please create a pull request.
