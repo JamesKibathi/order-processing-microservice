@@ -155,7 +155,7 @@ This is a Python-based E-Commerce service API built with **Django Rest Framework
 
 ### 3. **Product Endpoints**:
   - **GET /api/v1/products/**: List all products.
-  - **GET /api/v1/products/average_price/?category_id=/**: Returns the average price of the product for a given category.
+  - **GET /api/v1/products/average_price/?category_id="c909fadb-b6ec-47d3-a3b2-54fb58797942"/**: Returns the average price of the product for a given category.
   - **POST /api/v1/products/**: Add a new product.
 
 ### 4. **Category Endpoints**:
