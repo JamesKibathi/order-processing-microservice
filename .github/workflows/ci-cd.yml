@@ -150,14 +150,26 @@ jobs:
           minikube logs
           kubectl get nodes
 
-      - name: Force Delete Old Pods
+      - name: Clean Up Existing Deployment
         run: |
-          kubectl delete pods -l app=ecommerce-app --ignore-not-found=true
+          kubectl scale deployment ecommerce-app --replicas=0 || true
+          kubectl wait --for=delete pod -l app=ecommerce-app --timeout=30s || true
+      
+          kubectl delete deployment ecommerce-app --ignore-not-found=true
+          kubectl wait --for=delete deployment/ecommerce-app --timeout=60s || true
+          kubectl delete pods -l app=ecommerce-app --force --grace-period=0 || true
 
+          echo "Verifying all pods are gone..."
+          kubectl get pods -l app=ecommerce-app
      
       - name: Recreate Deployment
         run: |
           kubectl apply -f k8s/deployment.yaml
           kubectl set image deployment/ecommerce-app ecommerce-app=${{ secrets.DOCKER_USERNAME }}/ecommerce-app:latest 
+          
           kubectl rollout status deployment/ecommerce-app
+          echo "Checking deployment status..."
           kubectl describe deployment ecommerce-app
+
+          echo "Checking pod status..."
+          kubectl get pods -l app=ecommerce-app -o wide
