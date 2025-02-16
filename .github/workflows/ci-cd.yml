@@ -155,3 +155,4 @@ jobs:
           kubectl apply -f k8s/deployment.yaml
           kubectl set image deployment/ecommerce-app ecommerce-app=${{ secrets.DOCKER_USERNAME }}/ecommerce-app:latest
           kubectl rollout status deployment/ecommerce-app
+          kubectl describe deployment ecommerce-app
