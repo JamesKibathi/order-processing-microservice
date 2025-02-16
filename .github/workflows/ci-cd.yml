@@ -149,24 +149,9 @@ jobs:
           kubectl cluster-info
           minikube logs
           kubectl get nodes
-
-      - name: Check Existing Deployments
-        run: |
-          echo "Checking if deployment exists..."
-          kubectl get deployments || echo "No deployments found."   
-
-      - name: Apply Kubernetes Deployment (if missing)
-        run: |
-          kubectl apply -f k8s/deployment.yaml        
     
-
       - name: Deploy to Kubernetes
         run: |
-          echo "Checking if deployment exists..." 
-          if kubectl get deployment ecommerce-app; then
-            kubectl set image deployment/ecommerce-app ecommerce-app=${{ secrets.DOCKER_USERNAME }}/ecommerce-app:latest
-            kubectl rollout status deployment/ecommerce-app
-          else
-            echo "Deployment 'ecommerce-app' not found. Did you apply it?"
-            exit 1
-          fi
+          kubectl apply -f k8s/deployment.yaml
+          kubectl set image deployment/ecommerce-app ecommerce-app=${{ secrets.DOCKER_USERNAME }}/ecommerce-app:latest
+          kubectl rollout status deployment/ecommerce-app
