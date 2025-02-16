@@ -53,7 +53,7 @@ This is a Python-based E-Commerce service API built with **Django Rest Framework
       Example `.env` file:
       ```env
       AFRICA_TALKING_API_KEY=your_api_key
-      AFRICA_TALKING_API_SECRET=your_api_secret
+      AFRICA_TALKING_API_USERNAME=sandbox
       AFRICA_TALKING_SHORTCODE=your_shortcode
 
       AUTH0_CLIENT_ID=your_client_id
@@ -102,6 +102,7 @@ This is a Python-based E-Commerce service API built with **Django Rest Framework
 
 ### 1. **Order Endpoints**:
   - **POST /api/v1/orders/**: Place an order
+  
     - **Request**:
       ```json
       {
