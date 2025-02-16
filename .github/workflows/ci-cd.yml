@@ -103,16 +103,26 @@ jobs:
         with:
           version: 'latest'
 
-      - name: Configure Kubeconfig
+      - name: Debug KUBECONFIG Secret
         run: |
-          # Add error checking
           if [ -z "${{ secrets.KUBECONFIG }}" ]; then
             echo "Error: KUBECONFIG secret is empty"
             exit 1
           fi
-          echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig.yaml || exit 1
-          if [ ! -f kubeconfig.yaml ]; then
-            echo "Error: Failed to create kubeconfig.yaml"
+          echo "Secret length: ${#${{ secrets.KUBECONFIG }}}"    
+
+      - name: Configure Kubeconfig
+        run: |
+          if [ -z "${{ secrets.KUBECONFIG }}" ]; then
+            echo "Error: KUBECONFIG secret is empty"
+            exit 1
+          fi
+          echo "${{ secrets.KUBECONFIG }}" | tr -d '\n' | base64 -d > kubeconfig.yaml || {
+            echo "Error: Failed to decode KUBECONFIG secret"
+            exit 1
+          }
+          if [ ! -s kubeconfig.yaml ]; then
+            echo "Error: kubeconfig.yaml is empty or was not created correctly"
             exit 1
           fi
           echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
