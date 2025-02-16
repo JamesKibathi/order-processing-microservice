@@ -1,0 +1,175 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  test:
+    name: Run Django Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: store
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: Admin
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+
+      - name: Install Dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+          
+      - name: Decode and set environment variables
+        run: |
+          echo "AT_USERNAME=$(echo '${{ secrets.AT_USERNAME }}' | base64 -d)" >> $GITHUB_ENV
+          echo "AT_SHORT_CODE=$(echo '${{ secrets.AT_SHORT_CODE }}' | base64 -d)" >> $GITHUB_ENV
+          echo "AT_API_KEY=$(echo '${{ secrets.AT_API_KEY }}' | base64 -d)" >> $GITHUB_ENV
+ 
+
+      - name: Run Tests
+        env:
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        run: |
+          source venv/bin/activate
+          # Debug: Check if variables are set (without exposing values)
+          echo "Checking database configuration..."
+          [ -z "$DB_NAME" ] && echo "DB_NAME is not set" || echo "DB_NAME is set"
+          [ -z "$DB_USER" ] && echo "DB_USER is not set" || echo "DB_USER is set"
+          [ -z "$DB_HOST" ] && echo "DB_HOST is not set" || echo "DB_HOST is set"
+          [ -z "$DB_PORT" ] && echo "DB_PORT is not set" || echo "DB_PORT is set"
+          pytest -v  
+
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/ecommerce-app:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/ecommerce-app:latest
+
+  deploy:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set Up Kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+    
+
+      - name: Validate KUBECONFIG Secret
+        run: |
+          if [ -z "${{ secrets.KUBECONFIG }}" ]; then
+            echo "Error: KUBECONFIG secret is missing!"
+            exit 1
+          fi  
+
+      - name: Configure Kubeconfig
+        run: |
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig.yaml || { echo "Error decoding kubeconfig"; exit 1; }
+          export KUBECONFIG=$(pwd)/kubeconfig.yaml
+          echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
+          if [ ! -f kubeconfig.yaml ]; then
+            echo "Error: kubeconfig.yaml not created!"
+            exit 1
+          fi
+
+      - name: Start Minikube
+        run: |
+          echo "Checking if Minikube is running..."
+          if ! minikube status; then
+            echo "Starting Minikube..."
+            minikube start --wait=all --driver=docker
+            echo "Minikube started successfully."
+          else
+            echo "Minikube is already running."
+          fi
+
+      - name: Configure Minikube Without Certificate Check
+        run: |
+          kubectl config set-cluster minikube \
+            --server=https://192.168.49.2:8443 \
+            --insecure-skip-tls-verify=true
+          kubectl config set-context minikube --cluster=minikube --user=minikube
+          kubectl config use-context minikube
+
+
+      - name: Test Minikube Connection
+        run: |
+          minikube status
+          minikube ip
+          kubectl cluster-info
+          minikube logs
+          kubectl get nodes
+
+      - name: Clean Up Existing Deployment
+        run: |
+          kubectl scale deployment ecommerce-app --replicas=0 || true
+          kubectl wait --for=delete pod -l app=ecommerce-app --timeout=30s || true
+      
+          kubectl delete deployment ecommerce-app --ignore-not-found=true
+          kubectl wait --for=delete deployment/ecommerce-app --timeout=60s || true
+          kubectl delete pods -l app=ecommerce-app --force --grace-period=0 || true
+
+          echo "Verifying all pods are gone..."
+          kubectl get pods -l app=ecommerce-app
+     
+      - name: Recreate Deployment
+        run: |
+          kubectl apply -f k8s/deployment.yaml
+          kubectl set image deployment/ecommerce-app ecommerce-app=${{ secrets.DOCKER_USERNAME }}/ecommerce-app:latest 
+          
+          kubectl rollout status deployment/ecommerce-app
+          echo "Checking deployment status..."
+          kubectl describe deployment ecommerce-app
+
+          echo "Checking pod status..."
+          kubectl get pods -l app=ecommerce-app -o wide

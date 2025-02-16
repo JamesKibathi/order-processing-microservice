@@ -1,0 +1,13 @@
+__pycache__/
+.pytest_cache
+.coverage
+*.pyc
+*.pyo
+.env
+venv/
+.git/
+
+script.py
+kubeconfig.yaml
+
+

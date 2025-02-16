@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework.decorators import action
 from rest_framework import viewsets, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated,AllowAny
 from rest_framework.response import Response
 from django.db.models import Avg
 
@@ -18,6 +18,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+    permission_classes = [AllowAny]
 
     @action(detail=False, methods=['get'])
     def average_price(self, request):
@@ -50,7 +51,6 @@ class OrderViewSet(viewsets.ModelViewSet):
         if phone_number:
             existing_customer = Customer.objects.filter(phonenumber=phone_number).first()
             if existing_customer:
-                # If a customer with the same phone number exists, use that customer
                 customer = existing_customer
             
         

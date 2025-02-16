@@ -61,18 +61,17 @@ class Auth0Authentication(BaseAuthentication):
             last_name = payload.get("family_name", "User") 
             phone_number = payload.get('phone_number',generate_random_phonenumber())
 
-            # Ensure it's a real user (sub should not end with "@clients")
+            # Ensure it's a real user 
             if sub.endswith("@clients"):
                 raise AuthenticationFailed("M2M tokens are not allowed for user authentication.")
 
-            # Extract email (if available)
             email = payload.get("email", "")
 
             user = User.objects.filter(username=sub).first()
            
             if not user:
                 user = User.objects.create(
-                    username=sub,  # Store Auth0 sub as username
+                    username=sub,  
                     email=email or f"{sub}@example.com", 
                     phone = phone_number,
                     first_name=first_name,
@@ -88,7 +87,6 @@ class Auth0Authentication(BaseAuthentication):
             raise AuthenticationFailed(f'Authentication failed: {str(e)}')
         
 
-# permissions.py
 class HasValidAuth0Token(BasePermission):
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_authenticated)  
