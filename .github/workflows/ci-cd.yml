@@ -105,7 +105,16 @@ jobs:
 
       - name: Configure Kubeconfig
         run: |
-          echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig.yaml
+          # Add error checking
+          if [ -z "${{ secrets.KUBECONFIG }}" ]; then
+            echo "Error: KUBECONFIG secret is empty"
+            exit 1
+          fi
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig.yaml || exit 1
+          if [ ! -f kubeconfig.yaml ]; then
+            echo "Error: Failed to create kubeconfig.yaml"
+            exit 1
+          fi
           echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
 
       - name: Deploy to Kubernetes
