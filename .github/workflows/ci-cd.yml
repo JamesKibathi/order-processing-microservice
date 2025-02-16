@@ -149,11 +149,21 @@ jobs:
           kubectl cluster-info
           minikube logs
           kubectl get nodes
-    
-      - name: Deploy to Kubernetes
+
+      - name: Force Delete Old Pods
+        run: |
+          kubectl delete pods -l app=ecommerce-app --ignore-not-found=true
+
+      - name: Scale Down Deployment
+        run: |
+          kubectl scale deployment ecommerce-app --replicas=0
+          kubectl wait --for=delete pod -l app=ecommerce-app --timeout=30s || echo "Some pods might still be terminating..."
+
+      
+      
+      - name: Recreate Deployment
         run: |
           kubectl apply -f k8s/deployment.yaml
-          kubectl set image deployment/ecommerce-app ecommerce-app=${{ secrets.DOCKER_USERNAME }}/ecommerce-app:latest --force
-          kubectl rollout restart deployment/ecommerce-app
+          kubectl set image deployment/ecommerce-app ecommerce-app=${{ secrets.DOCKER_USERNAME }}/ecommerce-app:latest 
           kubectl rollout status deployment/ecommerce-app
           kubectl describe deployment ecommerce-app
