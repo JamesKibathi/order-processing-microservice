@@ -47,9 +47,9 @@ jobs:
           
       - name: Decode and set environment variables
         run: |
-          echo "AT_USERNAME=$(echo ${{ secrets.AT_USERNAME }} | base64 --decode)" >> $GITHUB_ENV
-          echo "AT_SHORT_CODE=$(echo ${{ secrets.AT_SHORT_CODE }} | base64 --decode)" >> $GITHUB_ENV
-          echo "AT_API_KEY=$(echo ${{ secrets.AT_API_KEY }} | base64 --decode)" >> $GITHUB_ENV
+          echo "AT_USERNAME=$(echo '${{ secrets.AT_USERNAME }}' | base64 -d)" >> $GITHUB_ENV
+          echo "AT_SHORT_CODE=$(echo '${{ secrets.AT_SHORT_CODE }}' | base64 -d)" >> $GITHUB_ENV
+          echo "AT_API_KEY=$(echo '${{ secrets.AT_API_KEY }}' | base64 -d)" >> $GITHUB_ENV
  
 
       - name: Run Tests
