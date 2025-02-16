@@ -121,7 +121,18 @@ jobs:
             echo "Error: kubeconfig.yaml not created!"
             exit 1
           fi
-      
+
+      - name: Start Minikube
+        run: |
+          echo "Checking if Minikube is running..."
+          if ! minikube status; then
+            echo "Starting Minikube..."
+            minikube start --wait=all --driver=docker
+            echo "Minikube started successfully."
+          else
+            echo "Minikube is already running."
+          fi
+
       - name: Configure Minikube CA Certificate
         run: |
           echo "${{ secrets.MINIKUBE_CA }}" | base64 -d > minikube-ca.crt
@@ -129,28 +140,20 @@ jobs:
             --server=https://192.168.49.2:8443 \
             --certificate-authority=$(pwd)/minikube-ca.crt
           kubectl config set-context minikube --cluster=minikube --user=minikube
+          kubectl config use-context minikube    
+
+      - name: Configure KUBECONFIG for Minikube
+        run: |
+          export KUBECONFIG=$(minikube --profile=minikube kubeconfig)
+          echo "KUBECONFIG=$(minikube --profile=minikube kubeconfig)" >> $GITHUB_ENV
           kubectl config use-context minikube
-
-      - name: Start Minikube
-        run: |
-          echo "Checking if Minikube is running..."
-          if ! minikube status; then
-            echo "Starting Minikube..."
-            minikube start --driver=docker
-            echo "Minikube started successfully."
-          else
-            echo "Minikube is already running."
-          fi
-
-      - name: Configure Minikube Context
-        run: |
-          echo "Updating Minikube context..."
-          minikube update-context
-          export KUBECONFIG=$(minikube kubeconfig)
-          echo "KUBECONFIG=$(minikube kubeconfig)" >> $GITHUB_ENV 
 
       - name: Test Minikube Connection
         run: |
+          minikube status
+          minikube ip
+          kubectl cluster-info
+          minikube logs
           kubectl get nodes       
     
 
