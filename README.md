@@ -63,13 +63,17 @@ This is a Python-based E-Commerce service API built with **Django Rest Framework
       ```
 
   - **Docker Setup**:
-      - Build the Docker container:
+      - **Build the Docker image**:
         ```bash
-        docker-compose build
+        docker build -t yourdockerhubusername/ecommerce-app .
         ```
-      - Start the container:
+      - **Push the Docker image to Docker Hub**:
         ```bash
-        docker-compose up
+        docker push yourdockerhubusername/ecommerce-app
+        ```
+      - **Run the container**:
+        ```bash
+        docker run -p 8000:8000 yourdockerhubusername/ecommerce-app
         ```
 
   - **Kubernetes Setup** (using Minikube):
@@ -81,6 +85,15 @@ This is a Python-based E-Commerce service API built with **Django Rest Framework
         ```bash
         kubectl apply -f k8s/
         ```
+      - Forward ports to access the app:
+        ```bash
+        kubectl port-forward svc/ecommerce-app 8000:8000
+        ```
+  - **Check Running Pods**:
+      - run:
+        ```bash
+        kubectl get pods -l app=ecommerce-app
+        ```     
 
   - **GitHub Actions**:
       - The CI/CD pipeline is configured to deploy and test the application automatically. Ensure you have your secrets configured in GitHub.
@@ -138,22 +151,26 @@ This is a Python-based E-Commerce service API built with **Django Rest Framework
       ```
 
 ### 2. **Authentication Endpoints**:
-  - **POST /api/v1/auth/login**: Login using Auth0 credentials and get the access token.
+  - **POST /https://{{AUTH0_DOMAIN}}/oauth/token**: Login using Auth0 credentials and get the access token.
 
 ### 3. **Product Endpoints**:
   - **GET /api/v1/products/**: List all products.
+  - **GET /api/v1/products/average_price/?category_id=/**: Returns the average price of the product for a given category.
   - **POST /api/v1/products/**: Add a new product.
 
 ### 4. **Category Endpoints**:
   - **GET /api/v1/categories/**: List all categories.
   - **POST /api/v1/categories/**: Create a new category.
 
-### 5. **Customer Endpoints**:
-  - **GET /api/v1/customers/**: List all customers.
-  - **POST /api/v1/customers/**: Create or update customer details.
-
 ## Sample Swagger UI:
-  ![Swagger UI](./swagger_image.png)
+  ![Products Swagger UI](./static/products.png)
+  ![Categories Swagger UI](./static/categories.png)
+  ![Orders Swagger UI](./static/orders.png)
+
+
+
+## Tests Coverage:
+  ![Coverage](./static/tests.png)
 
 ## Contribution:
 Feel free to fork and contribute to this project. If you have any improvements or bug fixes, please create a pull request.
