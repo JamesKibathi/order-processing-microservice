@@ -103,6 +103,24 @@ jobs:
         with:
           version: 'latest'
 
+      - name: Start Minikube
+        run: |
+          echo "Checking if Minikube is running..."
+          if ! minikube status; then
+            echo "Starting Minikube..."
+            minikube start --driver=docker
+            echo "Minikube started successfully."
+          else
+            echo "Minikube is already running."
+          fi
+
+      - name: Configure Minikube Context
+        run: |
+          echo "Updating Minikube context..."
+          minikube update-context
+          export KUBECONFIG=$(minikube kubeconfig)
+          echo "KUBECONFIG=$(minikube kubeconfig)" >> $GITHUB_ENV
+
       - name: Validate KUBECONFIG Secret
         run: |
           if [ -z "${{ secrets.KUBECONFIG }}" ]; then
