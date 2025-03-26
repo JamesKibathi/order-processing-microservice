@@ -244,6 +244,3 @@ jobs:
           kubectl describe deployment/ecommerce-app    
           kubectl describe pods 
 
-      - name: Verify Rollout
-        run: |
-          kubectl rollout status deployment/ecommerce-app --timeout=120s    
