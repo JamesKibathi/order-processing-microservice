@@ -235,6 +235,7 @@ jobs:
           docker tag ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest ecommerce-app:latest
           docker rmi ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest
           minikube image load ecommerce-app:latest
+          minikube image ls | grep ecommerce-app
           kubectl apply -f k8s/deployment.yaml
           kubectl rollout status deployment/ecommerce-app --timeout=300s    
           
