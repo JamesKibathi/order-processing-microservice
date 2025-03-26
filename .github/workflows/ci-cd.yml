@@ -200,11 +200,12 @@ jobs:
           kubectl get deployments
           kubectl get pods
           kubectl describe deployment postgres
-          kubectl get events --sort-by='.metadata.creationTimestamp
+          kubectl get events --sort-by='.metadata.creationTimestamp'
           kubectl rollout status deployment/postgres --timeout=120s   
 
       - name: Check Postgres Deployment Logs
         run: |
+          sleep 10
           POSTGRES_PODS=$(kubectl get pods -l app=postgres -o jsonpath='{.items[*].metadata.name}')
           for pod in $POSTGRES_PODS; do
             echo "Logs for pod: $pod"
