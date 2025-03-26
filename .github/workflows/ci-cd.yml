@@ -152,14 +152,41 @@ jobs:
         run: >
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{
           secrets.DOCKER_PASSWORD }}
+
       - name: Deploy Postgres to Minikube
         run: |
           kubectl apply -f k8s/postgres.yaml --validate=false
+          echo "Checking Postgres Deployment Details:"
+          kubectl get deployments
+          kubectl get pods
+          kubectl describe deployment postgres
+          kubectl get events --sort-by='.metadata.creationTimestamp
           kubectl rollout status deployment/postgres --timeout=120s   
+
+      - name: Check Postgres Deployment Logs
+        run: |
+          POSTGRES_PODS=$(kubectl get pods -l app=postgres -o jsonpath='{.items[*].metadata.name}')
+          for pod in $POSTGRES_PODS; do
+            echo "Logs for pod: $pod"
+            kubectl logs $pod || true
+            echo "---"
+          done    
+
+      - name: Verify Persistent Volume and Claims
+        run: |
+          kubectl get pvc
+          kubectl describe pvc postgres-pvc
+          kubectl get storageclass    
+
       - name: Wait for Postgres to be Ready
         run: >
-          kubectl wait --for=condition=Ready pod -l app=postgres
-          --timeout=180s   
+          kubectl wait --for=condition=Ready pod -l app=postgres --timeout=180s || {
+            echo "Postgres pod did not become ready in time"
+            kubectl get pods
+            kubectl describe pods
+            exit 1
+          } 
+
       - name: Pull and Deploy Application to Minikube
         run: >
           docker pull ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest 

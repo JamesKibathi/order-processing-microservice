@@ -8,6 +8,8 @@ spec:
   resources:
     requests:
       storage: 1Gi
+      
+  storageClassName: standard     
 
 ---
 apiVersion: apps/v1
@@ -29,9 +31,23 @@ spec:
           image: postgres:14
           ports:
             - containerPort: 5432
-          envFrom:
-            - secretRef:
-                name: django-secrets
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: django-secrets
+                  key: DATABASE_NAME
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: django-secrets
+                  key: DATABASE_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: django-secrets
+                  key: DATABASE_PASSWORD
+            
           volumeMounts:
             - mountPath: /var/lib/postgresql/data
               name: postgres-storage
