@@ -86,8 +86,8 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/ecommerce-app:latest .
-          docker push ${{ secrets.DOCKER_USERNAME }}/ecommerce-app:latest
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest
 
   deploy:
     name: Deploy to Kubernetes

@@ -1,9 +1,12 @@
+from django.db import connections
+from django.http import JsonResponse
 from django.shortcuts import render
 from rest_framework.decorators import action
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated,AllowAny
 from rest_framework.response import Response
 from django.db.models import Avg
+from django.db.utils import OperationalError
 
 from api.auth import Auth0Authentication
 from api.models.accounts import User
@@ -75,3 +78,34 @@ class OrderViewSet(viewsets.ModelViewSet):
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+
+
+class HealthCheckView(viewsets.ViewSet): 
+    """
+    Health check endpoint to verify application and database connectivity
+    """
+    def get(self, request):
+        try:
+            connections['default'].cursor()
+        except OperationalError:
+            return JsonResponse({'status': 'error', 'message': 'Database connection failed'}, status=500)
+        
+        return JsonResponse({
+            'status': 'healthy',
+            'message': 'Application is running and database is accessible'
+        })
+    
+#convert this to class
+def health_check(request):
+    """
+    Health check endpoint to verify application and database connectivity
+    """
+    try:
+        connections['default'].cursor()
+    except OperationalError:
+        return JsonResponse({'status': 'error', 'message': 'Database connection failed'}, status=500)
+    
+    return JsonResponse({
+        'status': 'healthy',
+        'message': 'Application is running and database is accessible'
+    })   
