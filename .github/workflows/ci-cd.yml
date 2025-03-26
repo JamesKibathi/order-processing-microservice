@@ -148,7 +148,7 @@ jobs:
         run: |
           # Apply ConfigMaps
           kubectl apply -f configmap.yaml
-          
+
           # Apply Secrets
           kubectl apply -f secrets.yaml
 
@@ -179,7 +179,8 @@ jobs:
           DB_PORT: '5432'
           SECRET_KEY: '${{ secrets.SECRET_KEY }}'
         run: |
-          # Ensure environment variables are properly escaped
+          # Create secret only if it doesn't exist
+          kubectl get secret django-secrets || \
           kubectl create secret generic django-secrets \
             --from-literal=DB_NAME="$DB_NAME" \
             --from-literal=DB_USER="$DB_USER" \
