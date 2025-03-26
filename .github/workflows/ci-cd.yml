@@ -229,15 +229,12 @@ jobs:
           } 
 
       - name: Pull and Deploy Application to Minikube
-        run: >
-          docker pull ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest 
-
-          minikube image load ${{ secrets.DOCKER_USERNAME
-          }}/e-commerce-service:latest  
-
-          kubectl apply -f k8s/deployment.yaml --validate=false
-
-          kubectl rollout status deployment/ecommerce-app --timeout=120s  
+        run: |
+          docker pull ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest
+          minikube image load ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest
+          kubectl apply -f k8s/deployment.yaml
+          kubectl rollout status deployment/ecommerce-app --timeout=300s    
+          
       - name: Check Deployment Status
         run: |
           kubectl get pods

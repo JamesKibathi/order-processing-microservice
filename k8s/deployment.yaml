@@ -17,7 +17,7 @@ spec:
       initContainers:
         - name: wait-for-db
           image: busybox
-          command: ['sh', '-c', 'until nc -z postgres-service 5432; do echo waiting for db; sleep 2; done;']
+          command: ['sh', '-c', 'until nc -z postgres-service 5432; do echo waiting for db; sleep 5; done;']
       containers:
         - name: ecommerce-app
           image: ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest
@@ -31,16 +31,16 @@ spec:
                 name: django-secrets
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
-            limits:
               memory: "256Mi"
-              cpu: "500m"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
           readinessProbe:
             httpGet:
               path: /api/v1/health/
               port: 8000
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60
             periodSeconds: 10
             failureThreshold: 3
             timeoutSeconds: 5
