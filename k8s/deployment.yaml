@@ -14,9 +14,14 @@ spec:
       labels:
         app: ecommerce-app
     spec:
+      initContainers:
+        - name: wait-for-db
+          image: busybox
+          command: ['sh', '-c', 'until nc -z postgres-service 5432; do echo waiting for db; sleep 2; done;']
       containers:
         - name: ecommerce-app
-          image: jwiki/e-commerce-service:latest
+          image: ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest
+          imagePullPolicy: Always 
           ports:
             - containerPort: 8000
           envFrom:
@@ -33,13 +38,16 @@ spec:
               cpu: "500m"
           readinessProbe:
             httpGet:
-              path: /
+              path: /api/v1/health/
               port: 8000
-            initialDelaySeconds: 10
-            periodSeconds: 3
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+            timeoutSeconds: 5
           livenessProbe:
             httpGet:
-              path: /
+              path: /api/v1/health/
               port: 8000
-            initialDelaySeconds: 15
-            periodSeconds: 20      
+            initialDelaySeconds: 45
+            periodSeconds: 20
+            failureThreshold: 5
