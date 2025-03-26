@@ -24,7 +24,7 @@ spec:
       containers:
         - name: ecommerce-app
           image: ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
           envFrom:

@@ -232,13 +232,12 @@ jobs:
         run: |
           eval $(minikube docker-env)
           docker pull ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest
-          docker tag ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest ecommerce-app:latest
-          docker rmi ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest
-          minikube image load ecommerce-app:latest
-          minikube image ls | grep ecommerce-app
+          minikube image load ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest
+          minikube image ls | grep e-commerce-service
+          sed -i 's|image: .*|image: ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest|' k8s/deployment.yaml
           kubectl apply -f k8s/deployment.yaml
-          kubectl rollout status deployment/ecommerce-app --timeout=300s -v 6 
-          
+          kubectl rollout status deployment/ecommerce-app --timeout=300s
+       
       - name: Check Deployment Status
         run: |
           kubectl get pods
