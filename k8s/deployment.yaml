@@ -5,7 +5,10 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: Recreate 
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app: ecommerce-app
@@ -17,11 +20,20 @@ spec:
       initContainers:
         - name: wait-for-db
           image: busybox
-          command: ['sh', '-c', 'until nc -z postgres-service 5432; do echo waiting for db; sleep 2; done;']
+          command: 
+            - 'sh'
+            - '-c'
+            - |
+              echo "Checking PostgreSQL connection..."
+              until nc -z -v -w5 postgres-service 5432; do 
+                echo "Waiting for PostgreSQL to be ready..."; 
+                sleep 5; 
+              done
+              echo "PostgreSQL is ready!"    
       containers:
         - name: ecommerce-app
           image: ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest
-          imagePullPolicy: Always 
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
           envFrom:
@@ -31,16 +43,16 @@ spec:
                 name: django-secrets
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
-            limits:
               memory: "256Mi"
-              cpu: "500m"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
           readinessProbe:
             httpGet:
               path: /api/v1/health/
               port: 8000
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60
             periodSeconds: 10
             failureThreshold: 3
             timeoutSeconds: 5
