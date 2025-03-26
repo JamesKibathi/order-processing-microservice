@@ -91,16 +91,50 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
+      - name: Check Minikube and Kubectl Installation
+        id: check-tools
+        run: |
+          MINIKUBE_INSTALLED=$(which minikube || echo "false")
+          KUBECTL_INSTALLED=$(which kubectl || echo "false")
+          
+          echo "Minikube installed: $MINIKUBE_INSTALLED"
+          echo "Kubectl installed: $KUBECTL_INSTALLED"
+          
+          echo "minikube_exists=$MINIKUBE_INSTALLED" >> $GITHUB_OUTPUT
+          echo "kubectl_exists=$KUBECTL_INSTALLED" >> $GITHUB_OUTPUT 
+          
+      - name: Install Minikube (if needed)
+        if: steps.check-tools.outputs.minikube_exists == 'false'
+        run: |
+          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          sudo install minikube-linux-amd64 /usr/local/bin/minikube
+
+      - name: Install Kubectl (if needed)
+        if: steps.check-tools.outputs.kubectl_exists == 'false'
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl     
+
       - name: Start Minikube
-        uses: medyagh/setup-minikube@latest
-        with:
-          minikube-version: v1.35.0
-          kubernetes-version: v1.32.0
-      
-      - name: Wait for Minikube to be ready
+        run: |
+          minikube start \
+            --driver=docker \
+            --kubernetes-version=v1.27.1 \
+            --wait=all \
+            --force
+
+      - name: Configure Kubectl Context
+        run: |
+          kubectl config use-context minikube
+          kubectl config set-cluster minikube --insecure-skip-tls-verify=true   
+
+      - name: Verify Minikube Setup
         run: |
           minikube status
+          minikube ip
           kubectl cluster-info
+          kubectl get nodes
+          kubectl version || true  # Use || true to prevent failure if version command is incompatible
 
       - name: Create Kubernetes Secrets
         run: |
