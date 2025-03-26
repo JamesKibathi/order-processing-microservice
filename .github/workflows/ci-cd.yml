@@ -1,6 +1,5 @@
 name: CI/CD Pipeline
-
-on:
+'on':
   push:
     branches:
       - main
@@ -9,60 +8,55 @@ on:
     branches:
       - main
       - master
-
 jobs:
   test:
     name: Run Django Tests
     runs-on: ubuntu-latest
-
     services:
       postgres:
-        image: postgres:14
+        image: 'postgres:14'
         env:
-          POSTGRES_DB: ${{ secrets.DB_NAME }}
-          POSTGRES_USER: ${{ secrets.DB_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: '${{ secrets.DB_NAME }}'
+          POSTGRES_USER: '${{ secrets.DB_USER }}'
+          POSTGRES_PASSWORD: '${{ secrets.DB_PASSWORD }}'
         ports:
-          - 5432:5432
+          - '5432:5432'
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s
           --health-retries 5
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
-
       - name: Set up Python 3.8
         uses: actions/setup-python@v4
         with:
-          python-version: "3.8"
-
+          python-version: '3.8'
       - name: Install Dependencies
         run: |
           python -m venv venv
           source venv/bin/activate
           pip install -r requirements.txt
-          
       - name: Decode and set environment variables
-        run: |
-          echo "AT_USERNAME=$(echo '${{ secrets.AT_USERNAME }}' | base64 -d)" >> $GITHUB_ENV
-          echo "AT_SHORT_CODE=$(echo '${{ secrets.AT_SHORT_CODE }}' | base64 -d)" >> $GITHUB_ENV
-          echo "AT_API_KEY=$(echo '${{ secrets.AT_API_KEY }}' | base64 -d)" >> $GITHUB_ENV
+        run: >
+          echo "AT_USERNAME=$(echo '${{ secrets.AT_USERNAME }}' | base64 -d)" >>
+          $GITHUB_ENV
 
+          echo "AT_SHORT_CODE=$(echo '${{ secrets.AT_SHORT_CODE }}' | base64
+          -d)" >> $GITHUB_ENV
+
+          echo "AT_API_KEY=$(echo '${{ secrets.AT_API_KEY }}' | base64 -d)" >>
+          $GITHUB_ENV
       - name: Run Tests
         env:
-          DB_NAME: ${{ secrets.DB_NAME }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_HOST: "localhost"  
-          DB_PORT: "5432"
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          DB_NAME: '${{ secrets.DB_NAME }}'
+          DB_USER: '${{ secrets.DB_USER }}'
+          DB_PASSWORD: '${{ secrets.DB_PASSWORD }}'
+          DB_HOST: localhost
+          DB_PORT: '5432'
+          SECRET_KEY: '${{ secrets.SECRET_KEY }}'
         run: |
           source venv/bin/activate
           pytest -v  
-
   build-and-push:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
@@ -70,51 +64,50 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
-
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
+          username: '${{ secrets.DOCKER_USERNAME }}'
+          password: '${{ secrets.DOCKER_PASSWORD }}'
       - name: Build and Push Docker Image
-        run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest .
-          docker push ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest
+        run: >
+          docker build -t ${{ secrets.DOCKER_USERNAME
+          }}/e-commerce-service:latest .
 
+          docker push ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest
   deploy:
     name: Deploy to Minikube
     runs-on: ubuntu-latest
     needs: test
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
-
       - name: Check Minikube and Kubectl Installation
         id: check-tools
         run: |
           MINIKUBE_INSTALLED=$(which minikube || echo "false")
           KUBECTL_INSTALLED=$(which kubectl || echo "false")
-          
+
           echo "Minikube installed: $MINIKUBE_INSTALLED"
           echo "Kubectl installed: $KUBECTL_INSTALLED"
-          
+
           echo "minikube_exists=$MINIKUBE_INSTALLED" >> $GITHUB_OUTPUT
           echo "kubectl_exists=$KUBECTL_INSTALLED" >> $GITHUB_OUTPUT 
-          
       - name: Install Minikube (if needed)
         if: steps.check-tools.outputs.minikube_exists == 'false'
-        run: |
-          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-          sudo install minikube-linux-amd64 /usr/local/bin/minikube
+        run: >
+          curl -LO
+          https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
 
+          sudo install minikube-linux-amd64 /usr/local/bin/minikube
       - name: Install Kubectl (if needed)
         if: steps.check-tools.outputs.kubectl_exists == 'false'
-        run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl     
+        run: >
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s
+          https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 
+          sudo install -o root -g root -m 0755 kubectl
+          /usr/local/bin/kubectl     
       - name: Start Minikube
         run: |
           minikube start \
@@ -122,65 +115,64 @@ jobs:
             --kubernetes-version=v1.27.1 \
             --wait=all \
             --force
-
       - name: Configure Kubectl Context
         run: |
           kubectl config use-context minikube
           kubectl config set-cluster minikube --insecure-skip-tls-verify=true   
-
       - name: Verify Minikube Setup
-        run: |
+        run: >
           minikube status
+
           minikube ip
+
           kubectl cluster-info
+
           kubectl get nodes
-          kubectl version || true  # Use || true to prevent failure if version command is incompatible
 
+          kubectl version || true  # Use || true to prevent failure if version
+          command is incompatible
       - name: Create Kubernetes Secrets
-            env:
-              DB_NAME: ${{ secrets.DB_NAME }}
-              DB_USER: ${{ secrets.DB_USER }}
-              DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-              DB_HOST: postgres-service
-              DB_PORT: "5432"
-              SECRET_KEY: ${{ secrets.SECRET_KEY }}
-              
-            run: |
-              # Ensure environment variables are properly escaped
-              kubectl create secret generic django-secrets \
-                --from-literal=DB_NAME="$DB_NAME" \
-                --from-literal=DB_USER="$DB_USER" \
-                --from-literal=DB_PASSWORD="$DB_PASSWORD" \
-                --from-literal=DB_HOST="$DB_HOST" \
-                --from-literal=DB_PORT="$DB_PORT" \
-                --from-literal=SECRET_KEY="$SECRET_KEY"
-        
-
-      - name: Log in to Docker Hub
+        env:
+          DB_NAME: '${{ secrets.DB_NAME }}'
+          DB_USER: '${{ secrets.DB_USER }}'
+          DB_PASSWORD: '${{ secrets.DB_PASSWORD }}'
+          DB_HOST: postgres-service
+          DB_PORT: '5432'
+          SECRET_KEY: '${{ secrets.SECRET_KEY }}'
         run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-
+          # Ensure environment variables are properly escaped
+          kubectl create secret generic django-secrets \
+            --from-literal=DB_NAME="$DB_NAME" \
+            --from-literal=DB_USER="$DB_USER" \
+            --from-literal=DB_PASSWORD="$DB_PASSWORD" \
+            --from-literal=DB_HOST="$DB_HOST" \
+            --from-literal=DB_PORT="$DB_PORT" \
+            --from-literal=SECRET_KEY="$SECRET_KEY"
+      - name: Log in to Docker Hub
+        run: >
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{
+          secrets.DOCKER_PASSWORD }}
       - name: Deploy Postgres to Minikube
         run: |
           kubectl apply -f k8s/postgres.yaml --validate=false
           kubectl rollout status deployment/postgres --timeout=120s   
-
       - name: Wait for Postgres to be Ready
-        run: |
-          kubectl wait --for=condition=Ready pod -l app=postgres --timeout=180s   
-
+        run: >
+          kubectl wait --for=condition=Ready pod -l app=postgres
+          --timeout=180s   
       - name: Pull and Deploy Application to Minikube
-        run: |
+        run: >
           docker pull ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest 
-          minikube image load ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest  
-          kubectl apply -f k8s/deployment.yaml --validate=false
-          kubectl rollout status deployment/ecommerce-app --timeout=120s  
 
+          minikube image load ${{ secrets.DOCKER_USERNAME
+          }}/e-commerce-service:latest  
+
+          kubectl apply -f k8s/deployment.yaml --validate=false
+
+          kubectl rollout status deployment/ecommerce-app --timeout=120s  
       - name: Check Deployment Status
         run: |
           kubectl get pods
           kubectl get services
           kubectl describe pod ecommerce-app
           kubectl logs deployment/ecommerce-app    
-
-        
