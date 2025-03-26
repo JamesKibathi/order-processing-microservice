@@ -41,12 +41,18 @@ jobs:
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_HOST: "postgres-service"  
-          DB_PORT: "5432"
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
         run: |
           source venv/bin/activate
-          pytest -v  
+          # Debug: Check if variables are set (without exposing values)
+          echo "Checking database configuration..."
+          [ -z "$DB_NAME" ] && echo "DB_NAME is not set" || echo "DB_NAME is set"
+          [ -z "$DB_USER" ] && echo "DB_USER is not set" || echo "DB_USER is set"
+          [ -z "$DB_HOST" ] && echo "DB_HOST is not set" || echo "DB_HOST is set"
+          [ -z "$DB_PORT" ] && echo "DB_PORT is not set" || echo "DB_PORT is set"
+          pytest -v   
 
   build-and-push:
     name: Build and Push Docker Image
