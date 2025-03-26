@@ -237,7 +237,7 @@ jobs:
           minikube image load ecommerce-app:latest
           minikube image ls | grep ecommerce-app
           kubectl apply -f k8s/deployment.yaml
-          kubectl rollout status deployment/ecommerce-app --timeout=300s    
+          kubectl rollout status deployment/ecommerce-app --timeout=300s -v 6 
           
       - name: Check Deployment Status
         run: |
