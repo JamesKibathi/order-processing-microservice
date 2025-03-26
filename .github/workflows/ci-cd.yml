@@ -107,18 +107,56 @@ jobs:
           https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 
           sudo install -o root -g root -m 0755 kubectl
-          /usr/local/bin/kubectl     
-      - name: Start Minikube
+          /usr/local/bin/kubectl    
+
+      - name: Reset Kubernetes Cluster
         run: |
+          # Stop any running Minikube instance
+          minikube stop || true
+          
+          # Delete existing Minikube cluster
+          minikube delete || true
+          
+          # Restart Minikube with optimized resources
           minikube start \
             --driver=docker \
             --kubernetes-version=v1.27.1 \
+            --cpus=2 \
+            --memory=4g \
             --wait=all \
             --force
+          
+          # Wait for cluster to be fully ready
+          kubectl wait --for=condition=Ready nodes --all --timeout=300s   
+
+      - name: Clean Up Existing Resources
+        run: |
+          # Remove all existing resources
+          kubectl delete all --all || true
+          kubectl delete pvc --all || true
+          kubectl delete secrets --all || true
+          
+          # Wait for resources to be terminated
+          sleep 15   
+
       - name: Configure Kubectl Context
         run: |
           kubectl config use-context minikube
-          kubectl config set-cluster minikube --insecure-skip-tls-verify=true   
+          kubectl config set-cluster minikube --insecure-skip-tls-verify=true
+      
+      - name: Deploy Configuration
+        run: |
+          # Apply ConfigMaps
+          kubectl apply -f configmap.yaml
+          
+          # Apply Secrets
+          kubectl apply -f secrets.yaml
+
+          # Verify resources
+          kubectl get configmaps
+          kubectl get secrets
+
+                   
       - name: Verify Minikube Setup
         run: >
           minikube status
@@ -131,6 +169,7 @@ jobs:
 
           kubectl version || true  # Use || true to prevent failure if version
           command is incompatible
+
       - name: Create Kubernetes Secrets
         env:
           DB_NAME: '${{ secrets.DB_NAME }}'
