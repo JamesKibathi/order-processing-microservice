@@ -83,39 +83,60 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest
 
   deploy:
-    name: Deploy to Kubernetes
+    name: Deploy to Minikube
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: test
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Set Up Kubectl
-        uses: azure/setup-kubectl@v3
+      - name: Start Minikube
+        uses: medyagh/setup-minikube@latest
         with:
-          version: 'latest'
-
-      - name: Validate KUBECONFIG Secret
+          minikube-version: v1.35.0
+          kubernetes-version: v1.32.0
+      
+      - name: Wait for Minikube to be ready
         run: |
-          if [ -z "${{ secrets.KUBECONFIG }}" ]; then
-            echo "Error: KUBECONFIG secret is missing!"
-            exit 1
-          fi  
+          minikube status
+          kubectl cluster-info
 
-      - name: Configure Kubeconfig
+      - name: Create Kubernetes Secrets
         run: |
-          echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig.yaml
-          export KUBECONFIG=$(pwd)/kubeconfig.yaml
-          echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
+          kubectl create secret generic django-secrets \
+            --from-literal=DB_NAME=${{ secrets.DB_NAME }} \
+            --from-literal=DB_USER=${{ secrets.DB_USER }} \
+            --from-literal=DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            --from-literal=DB_HOST=postgres-service \
+            --from-literal=DB_PORT=5432 \
+            --from-literal=SECRET_KEY=${{ secrets.SECRET_KEY }}  
 
-      - name: Deploy Postgres to Kubernetes
+      - name: Log in to Docker Hub
         run: |
-          kubectl apply -f k8s/postgres.yaml
-          kubectl rollout status statefulset/postgres --timeout=120s
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Deploy Application to Kubernetes
+      - name: Deploy Postgres to Minikube
         run: |
-          kubectl apply -f k8s/deployment.yaml
-          kubectl set image deployment/ecommerce-app ecommerce-app=${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest
-          kubectl rollout status deployment/ecommerce-app --timeout=120s
+          kubectl apply -f k8s/postgres.yaml --validate=false
+          kubectl rollout status deployment/postgres --timeout=120s   
+
+      - name: Wait for Postgres to be Ready
+        run: |
+          kubectl wait --for=condition=Ready pod -l app=postgres --timeout=180s   
+
+      - name: Pull and Deploy Application to Minikube
+        run: |
+          docker pull ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest 
+          minikube image load ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest  
+          kubectl apply -f k8s/deployment.yaml --validate=false
+          kubectl rollout status deployment/ecommerce-app --timeout=120s  
+
+      - name: Check Deployment Status
+        run: |
+          kubectl get pods
+          kubectl get services
+          kubectl describe pod ecommerce-app
+          kubectl logs deployment/ecommerce-app    
+
+        
