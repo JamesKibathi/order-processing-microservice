@@ -236,11 +236,14 @@ jobs:
           minikube image ls | grep e-commerce-service
           sed -i 's|image: .*|image: ${{ secrets.DOCKER_USERNAME }}/e-commerce-service:latest|' k8s/deployment.yaml
           kubectl apply -f k8s/deployment.yaml
-          kubectl rollout status deployment/ecommerce-app --timeout=300s
-       
+          
       - name: Check Deployment Status
         run: |
           kubectl get pods
           kubectl get services
-          kubectl describe pod ecommerce-app
-          kubectl logs deployment/ecommerce-app    
+          kubectl describe deployment/ecommerce-app    
+          kubectl describe pods 
+
+      - name: Verify Rollout
+        run: |
+          kubectl rollout status deployment/ecommerce-app --timeout=120s    
