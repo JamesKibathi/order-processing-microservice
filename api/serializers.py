@@ -44,16 +44,45 @@ class CustomerSerializer(serializers.ModelSerializer):
         return Customer.objects.create(**validated_data)
 
 class CategorySerializer(serializers.ModelSerializer):
-    code = serializers.CharField(read_only=True)
+    children = serializers.SerializerMethodField()
+    products_count = serializers.IntegerField(read_only=True)
     class Meta:
         model = Category
-        fields = ['id','code', 'title', 'parent']
+        fields = ['id', 'code', 'title', 'parent', 'children', 'products_count']
+
+    def get_children(self, obj):
+        # Limit recursion depth
+        if self.context.get('depth', 0) >= 2:
+            return []
+        
+        # Create a new context with increased depth
+        context = dict(self.context)
+        context['depth'] = context.get('depth', 0) + 1
+
+        # Get direct children
+        children = obj.get_children()
+        return CategorySerializer(children, many=True, context=context).data
+    
 
 class ProductSerializer(serializers.ModelSerializer):
-    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all()) 
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(),
+        write_only=True
+    )
+    category_details = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Product
-        fields = ['id','name', 'description', 'price', 'category']
+        fields = ['id', 'name', 'description', 'price', 'category','category_details']
+
+    def get_category_details(self, obj):
+        # Prevent recursive serialization
+        return {
+            'id': obj.category.id,
+            'code': obj.category.code,
+            'title': obj.category.title
+        }
+    
 
 class OrderItemSerializer(serializers.ModelSerializer):
     price = serializers.ReadOnlyField(source='product.price')

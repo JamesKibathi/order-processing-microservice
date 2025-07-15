@@ -24,4 +24,9 @@ class Category(BaseModel,MPTTModel):
             self.code = generate_category_code()
         super().save(*args,**kwargs)    
 
+    @classmethod
+    def get_root_categories(cls):
+        """Custom method to get root categories"""
+        return cls.objects.filter(parent__isnull=True)   
+
     
